@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>改方子 · 把一份配方从一个模具搬到另一个模具</title>
+<meta name="description" content="8 寸的方子换到 6 寸模、圆模换方模、高矮不一样的模：按容积比算出新方每一行该称多少克，并把鸡蛋不能切这件事的两种收口代价算给你看。全部由你填数字，页面不联网、不内置任何真实配方。">
+<style>
+  :root{
+    --bg:#f5f4f0; --card:#ffffff; --paper:#fcfbf8; --ink:#1b1a17; --ink2:#54514a; --ink3:#837f76;
+    --line:#e6e2d9; --line2:#cfc9bb; --brand:#8a5a1e; --brand2:#f6eee0;
+    --good:#1c6b46; --goodbg:#e9f4ee; --warn:#8a5a00; --warnbg:#fdf5e4; --bad:#a3251b; --badbg:#fcebe8;
+    --radius:12px; --w:1080px;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{background:var(--bg);color:var(--ink);font:15px/1.72 -apple-system,BlinkMacSystemFont,"PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:var(--w);margin:0 auto;padding:16px 14px 110px}
+  header.top{padding:2px 2px 4px}
+  h1{margin:0 0 6px;font-size:26px;line-height:1.34;letter-spacing:.3px}
+  .lede{margin:0;color:var(--ink2);font-size:14.5px}
+  .badges{margin-top:9px;display:flex;flex-wrap:wrap;gap:7px}
+  .badge{font-size:12px;padding:3px 9px;border-radius:999px;background:#fff;border:1px solid var(--line2);color:var(--ink2);max-width:100%;overflow-wrap:anywhere}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:14px;margin:12px 0 0;box-shadow:0 1px 2px rgba(27,26,23,.04)}
+  .card > h2{margin:0 0 4px;font-size:17px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  .card > h2 .step{font-size:12px;font-weight:700;color:#fff;background:var(--brand);border-radius:999px;padding:2px 9px;white-space:nowrap}
+  .card > .hint{margin:0 0 11px;color:var(--ink2);font-size:13.5px}
+  h3.sec{margin:15px 0 6px;font-size:13.5px;color:var(--ink2);letter-spacing:.3px;border-bottom:1px dashed var(--line);padding-bottom:4px}
+  .field{margin-bottom:10px;min-width:0}
+  .field label{display:block;font-size:13px;color:var(--ink2);margin-bottom:4px}
+  .field label .sub{color:var(--ink3);font-size:12px}
+  input[type=text],select{width:100%;padding:9px 11px;border:1px solid var(--line2);border-radius:9px;font-size:14.5px;background:#fff;color:var(--ink);font-variant-numeric:tabular-nums}
+  input[type=text]:focus,select:focus{outline:2px solid #e7d6b6;border-color:var(--brand)}
+  input.bad{border-color:var(--bad);background:var(--badbg)}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+  .grid2 > *,.grid3 > *{min-width:0}
+  @media(max-width:700px){ .grid3{grid-template-columns:1fr 1fr} }
+  @media(max-width:560px){ .grid2,.grid3{grid-template-columns:1fr} }
+  .mono{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-variant-numeric:tabular-nums}
+  .chips{display:flex;flex-wrap:wrap;gap:7px}
+  .chip{cursor:pointer;font:inherit;font-size:13.5px;padding:6px 12px;border-radius:999px;border:1px solid var(--line2);background:#fff;color:var(--ink2)}
+  .chip[aria-pressed="true"]{background:var(--brand);border-color:var(--brand);color:#fff;font-weight:600}
+  .btn[aria-pressed="true"]{background:var(--goodbg);border-color:var(--good);color:var(--good);font-weight:600}
+  .btn{cursor:pointer;font:inherit;font-size:13.5px;padding:8px 13px;border-radius:9px;border:1px solid var(--line2);background:#fff;color:var(--ink)}
+  .btn:hover{border-color:var(--brand);color:var(--brand)}
+  .btn.primary{background:var(--brand);border-color:var(--brand);color:#fff;font-weight:600}
+  .btn.primary:hover{color:#fff;filter:brightness(1.08)}
+  .btn.sm{font-size:12.5px;padding:4px 9px;border-radius:7px}
+  .btnrow{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+  .hidden{display:none !important}
+  .panel{border:1px solid var(--line);border-radius:11px;background:var(--paper);padding:11px 12px}
+  .panel > h4{margin:0 0 8px;font-size:14px;display:flex;gap:7px;align-items:center;flex-wrap:wrap}
+  .panel .tag{font-size:11.5px;background:var(--brand2);color:var(--brand);border-radius:999px;padding:1px 8px;font-weight:700}
+  /* 诊断票 */
+  .ticket{border:1px solid var(--line2);border-radius:12px;background:var(--paper);padding:13px 15px;position:relative;overflow:hidden}
+  .ticket:before{content:"";position:absolute;left:0;top:0;bottom:0;width:5px;background:var(--brand)}
+  .ticket .k{font-size:11.5px;letter-spacing:2px;color:var(--ink3)}
+  .ticket .vt{font-size:19px;font-weight:700;margin:5px 0 4px;line-height:1.5}
+  .ticket .vw{font-size:13.5px;color:var(--ink2)}
+  .ticket.warn:before{background:var(--warn)} .ticket.warn .vt{color:var(--warn)}
+  .ticket.bad:before{background:var(--bad)} .ticket.bad .vt{color:var(--bad)}
+  /* 读数 */
+  .readout{display:grid;grid-template-columns:repeat(auto-fit,minmax(132px,1fr));gap:9px;margin-top:11px}
+  .readout > *{min-width:0}
+  @media(max-width:430px){ .readout{grid-template-columns:1fr 1fr;gap:7px} .ro .v{font-size:16px} .ro .l,.ro .s{font-size:10.5px} }
+  .ro{border:1px solid var(--line);border-radius:10px;background:#fff;padding:9px 10px}
+  .ro .l{font-size:11.5px;color:var(--ink3);letter-spacing:.3px}
+  .ro .v{font-size:19px;font-weight:700;margin:2px 0 1px;line-height:1.35;overflow-wrap:anywhere}
+  .ro .s{font-size:11.5px;color:var(--ink2)}
+  .ro.hi{border-color:var(--brand);background:var(--brand2)}
+  .ro.hi .v{color:var(--brand)}
+  /* 条形对比 */
+  .bars{margin-top:12px}
+  .bar{display:grid;grid-template-columns:150px 1fr 92px;gap:9px;align-items:center;margin-bottom:6px}
+  .bar .bl{font-size:12.5px;color:var(--ink2);overflow-wrap:anywhere}
+  .bar .bt{background:#efeee9;border-radius:7px;height:20px;position:relative;overflow:hidden}
+  .bar .bf{height:100%;border-radius:7px;background:var(--line2)}
+  .bar .bf.on{background:var(--brand)}
+  .bar .bv{font-size:12.5px;text-align:right;font-variant-numeric:tabular-nums;color:var(--ink)}
+  @media(max-width:560px){ .bar{grid-template-columns:1fr;gap:3px} .bar .bv{text-align:left} }
+  /* 表格 */
+  .tw{overflow-x:auto;-webkit-overflow-scrolling:touch}
+  table{border-collapse:collapse;width:100%;font-size:13.5px;font-variant-numeric:tabular-nums}
+  th,td{border-bottom:1px solid var(--line);padding:7px 8px;text-align:left;vertical-align:top}
+  th{font-size:12px;color:var(--ink2);font-weight:600;background:#faf9f6;white-space:nowrap}
+  td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
+  tr.egg td{background:#fdfaf3}
+  tr.total td{font-weight:700;border-top:1px solid var(--line2)}
+  .mark{background:#fdf3dd;border-radius:5px;padding:0 5px;font-weight:700}
+  @media(max-width:640px){
+    .tw{overflow-x:visible}
+    table.stack thead{display:none}
+    table.stack tr{display:block;border:1px solid var(--line);border-radius:10px;margin-bottom:8px;background:#fff;padding:4px 2px}
+    table.stack td{display:block;border:0;padding:4px 10px;text-align:left !important}
+    table.stack td:before{content:attr(data-l) "：";color:var(--ink3);font-size:11.5px;display:block}
+    table.stack td.blank{display:none}
+    table.stack tr.total td{background:#faf9f6}
+    table.stack tr.egg td{background:#fdfaf3}
+  }
+  .notes{margin:6px 0 0;padding-left:20px;color:var(--ink2);font-size:13.5px}
+  .notes li{margin:4px 0}
+  .kv{list-style:none;margin:4px 0 0;padding:0}
+  .kv li{display:flex;gap:8px;justify-content:space-between;border-bottom:1px dashed var(--line);padding:4px 0;font-size:13px}
+  .kv li span:last-child{font-variant-numeric:tabular-nums;text-align:right}
+  /* 处方 */
+  .advice{border:1px solid var(--line);border-radius:11px;padding:10px 12px;background:#fff;margin-top:9px}
+  .advice .ah{display:flex;gap:8px;align-items:flex-start}
+  .advice .ah input{margin-top:5px}
+  .advice .at{font-weight:600;font-size:14px}
+  .advice .ad{color:var(--ink2);font-size:13px;margin-top:2px}
+  .advice .an{margin-top:6px;font-size:13px}
+  .advice.dead{opacity:.86;background:#fbfaf7}
+  /* 自检 */
+  .ck{display:flex;gap:9px;align-items:flex-start;padding:6px 0;border-bottom:1px dashed var(--line);font-size:13.2px}
+  .ck .dot{flex:0 0 auto;width:19px;height:19px;border-radius:50%;background:var(--goodbg);color:var(--good);font-size:12px;line-height:19px;text-align:center;font-weight:700;margin-top:2px}
+  .ck.f .dot{background:var(--badbg);color:var(--bad)}
+  .ck .dtx{color:var(--ink3);font-size:12.3px;overflow-wrap:anywhere}
+  .err{border:1px solid #e7bdb7;background:var(--badbg);border-radius:10px;padding:10px 12px;margin-top:10px}
+  .err h4{margin:0 0 5px;font-size:13.5px;color:var(--bad)}
+  .err ul{margin:0;padding-left:19px;font-size:13px;color:#7d2b22}
+  .footbar{position:fixed;left:0;right:0;bottom:0;background:rgba(255,255,255,.96);border-top:1px solid var(--line2);backdrop-filter:blur(6px);z-index:9}
+  .footbar .in{max-width:var(--w);margin:0 auto;padding:7px 14px;display:flex;gap:16px;flex-wrap:wrap;font-size:12.5px;color:var(--ink2)}
+  .footbar b{color:var(--ink);font-variant-numeric:tabular-nums}
+  @media(max-width:640px){ .footbar .in{gap:10px;font-size:11.5px;padding:6px 10px} }
+  .rowctl{display:flex;gap:6px;align-items:center}
+  .note-inline{font-size:12.5px;color:var(--ink3);margin:6px 0 0}
+  .pill{display:inline-block;font-size:12px;background:var(--brand2);color:var(--brand);border-radius:999px;padding:1px 8px;font-weight:700}
+  .pill.g{background:var(--goodbg);color:var(--good)}
+  .pill.r{background:var(--badbg);color:var(--bad)}
+  details.fold{margin-top:8px}
+  details.fold summary{cursor:pointer;font-size:13.5px;color:var(--brand);font-weight:600}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="top">
+    <h1>改方子</h1>
+    <p class="lede">把一份配方从一个模具搬到另一个模具：先按<b>容积比</b>算出新方每一行该称多少克，再处理那件不能按比例缩的事 —— <b>鸡蛋不能切</b>。页面不联网，配方、模具、报价都由你填，默认值是一份<b>虚构示例</b>。</p>
+    <div class="badges">
+      <span class="badge" id="badge-scene">—</span>
+      <span class="badge" id="badge-src">—</span>
+      <span class="badge" id="badge-dst">—</span>
+    </div>
+  </header>
+
+  <!-- ═══ 诊断 ═══ -->
+  <section class="card" id="sec-diagnosis">
+    <h2>先看结论 <span class="step">诊断</span><span class="badge" id="diag-sameheight">—</span></h2>
+    <p class="hint">结论只有一句：新方 = 原方 × 料量比 k。k 是<b>容积比</b>，两个模等高时就是面积比 —— 不是直径比。</p>
+    <div class="ticket" id="ticket"><div class="k">结论</div><div class="vt" id="ticket-vt">—</div><div class="vw" id="ticket-vw">—</div></div>
+    <div class="readout" id="readout"></div>
+    <div class="bars" id="bars"></div>
+  </section>
+
+  <div class="err hidden" id="sec-errors"><h4>这几个格子得先改对</h4><ul id="err-list"></ul></div>
+
+  <!-- ═══ 输入 ═══ -->
+  <section class="card" id="sec-input">
+    <h2>你手上的两个模 <span class="step">输入</span></h2>
+    <p class="hint">尺寸都按<b>模具内侧</b>量（能装料的那部分），单位厘米。方形/长方模填长与宽，圆形模填直径。</p>
+    <div class="chips" id="scenarios" style="margin-bottom:11px"></div>
+    <div class="grid2">
+      <div class="panel">
+        <h4>原方用的模 <span class="tag" id="src-tag">—</span></h4>
+        <div class="field"><label>形状</label><div class="chips" id="f-srcShape">
+          <button class="chip" type="button" data-v="round">圆模（按直径）</button>
+          <button class="chip" type="button" data-v="rect">方模 / 长方模</button>
+        </div></div>
+        <div class="grid2">
+          <div class="field" id="wrap-srcDia"><label>直径 <span class="sub">cm</span></label><input type="text" id="f-srcDia" inputmode="decimal"></div>
+          <div class="field" id="wrap-srcLen"><label>长 <span class="sub">cm</span></label><input type="text" id="f-srcLen" inputmode="decimal"></div>
+          <div class="field" id="wrap-srcWid"><label>宽 <span class="sub">cm</span></label><input type="text" id="f-srcWid" inputmode="decimal"></div>
+        </div>
+        <div class="field"><label>模的高度 <span class="sub">cm（侧壁内高）</span></label><input type="text" id="f-srcHeight" inputmode="decimal"></div>
+      </div>
+      <div class="panel">
+        <h4>要换成的模 <span class="tag" id="dst-tag">—</span></h4>
+        <div class="field"><label>形状</label><div class="chips" id="f-dstShape">
+          <button class="chip" type="button" data-v="round">圆模（按直径）</button>
+          <button class="chip" type="button" data-v="rect">方模 / 长方模</button>
+        </div></div>
+        <div class="grid2">
+          <div class="field" id="wrap-dstDia"><label>直径 <span class="sub">cm</span></label><input type="text" id="f-dstDia" inputmode="decimal"></div>
+          <div class="field" id="wrap-dstLen"><label>长 <span class="sub">cm</span></label><input type="text" id="f-dstLen" inputmode="decimal"></div>
+          <div class="field" id="wrap-dstWid"><label>宽 <span class="sub">cm</span></label><input type="text" id="f-dstWid" inputmode="decimal"></div>
+        </div>
+        <div class="field"><label>模的高度 <span class="sub">cm（侧壁内高）</span></label><input type="text" id="f-dstHeight" inputmode="decimal"></div>
+      </div>
+    </div>
+
+    <h3 class="sec">原方（按面粉 100% 的烘焙百分比填）</h3>
+    <div class="grid3">
+      <div class="field"><label>面粉基准 <span class="sub">g（算 100%）</span></label><input type="text" id="f-flourG" inputmode="decimal"></div>
+      <div class="field"><label>鸡蛋 <span class="sub">个</span></label><input type="text" id="f-eggCount" inputmode="decimal"></div>
+      <div class="field"><label>每个蛋的蛋液 <span class="sub">g</span></label><input type="text" id="f-eggG" inputmode="decimal"></div>
+    </div>
+    <div class="tw">
+      <table class="stack" id="rows-table">
+        <thead><tr><th>配料</th><th class="num">烘焙百分比（相对面粉）</th><th>算不算液体</th><th></th></tr></thead>
+        <tbody id="rows-body"></tbody>
+      </table>
+    </div>
+    <div class="btnrow">
+      <button class="btn sm" type="button" id="btn-add-row">＋ 加一行配料</button>
+      <span class="note-inline">「算不算液体」只影响收口①：勾上的行会被拿去抵掉多出来的蛋液。</span>
+    </div>
+
+    <h3 class="sec">称量口径</h3>
+    <div class="grid2">
+      <div class="field"><label>称量刻度 <span class="sub">g</span></label><div class="chips" id="f-roundStep">
+        <button class="chip" type="button" data-v="0.1">0.1 g</button>
+        <button class="chip" type="button" data-v="1">1 g</button>
+        <button class="chip" type="button" data-v="5">5 g</button>
+      </div></div>
+      <div class="field"><label>怎么取整</label><div class="chips" id="f-roundMode">
+        <button class="chip" type="button" data-v="nearest">四舍五入（半格向上）</button>
+        <button class="chip" type="button" data-v="up">一律向上</button>
+      </div></div>
+    </div>
+    <div class="field"><label>这一页的备注 <span class="sub">（只显示在这一页和导出文件里）</span></label><input type="text" id="f-label"></div>
+    <div class="btnrow">
+      <button class="btn" type="button" id="btn-save">保存到本机</button>
+      <button class="btn" type="button" id="btn-reset">恢复默认示例</button>
+      <button class="btn" type="button" id="btn-import-json">导入 JSON 备份</button>
+      <input type="file" id="file-import" accept="application/json,.json" class="hidden">
+    </div>
+  </section>
+
+  <!-- ═══ 几何账 ═══ -->
+  <section class="card" id="sec-geometry">
+    <h2>k 是怎么来的 <span class="step">依据</span></h2>
+    <p class="hint">圆面积 πD²/4、方面积 长×宽，再乘各自高度得到容积；k = 目标容积 ÷ 原容积。两个模等高时高度约掉，k 就是面积比。</p>
+    <div class="tw">
+      <table class="stack">
+        <thead><tr><th>量</th><th class="num">原模</th><th class="num">目标模</th><th class="num">比（目标 ÷ 原）</th><th>怎么算的</th></tr></thead>
+        <tbody id="geo-body"></tbody>
+      </table>
+    </div>
+    <ul class="notes" id="geo-notes"></ul>
+  </section>
+
+  <!-- ═══ 新方对照表 ═══ -->
+  <section class="card" id="sec-newrecipe">
+    <h2>新方（照着称） <span class="step">对照表</span><span class="badge" id="new-sum">—</span></h2>
+    <p class="hint">左半是原来的方子，右半是换算后的。中间那一列是<b>精确值</b>，最右是<b>按你的刻度取整</b>之后真正该往秤上放的数。</p>
+    <div class="tw">
+      <table class="stack" id="new-table">
+        <thead><tr><th>配料</th><th class="num">烘焙 %</th><th class="num">原方 g</th><th class="num">新方精确 g</th><th class="num">按刻度 g</th><th>说明</th></tr></thead>
+        <tbody id="new-body"></tbody>
+      </table>
+    </div>
+    <div class="btnrow">
+      <button class="btn primary" type="button" id="btn-export-csv">导出 CSV</button>
+      <button class="btn" type="button" id="btn-export-md">导出 MD</button>
+      <button class="btn" type="button" id="btn-export-png">导出结果卡 PNG</button>
+      <button class="btn" type="button" id="btn-export-json">导出 JSON 备份</button>
+    </div>
+  </section>
+
+  <!-- ═══ 鸡蛋两种收口 ═══ -->
+  <section class="card" id="sec-egg">
+    <h2>鸡蛋不能切 <span class="step">两选一</span><span class="badge" id="close-choice">—</span></h2>
+    <p class="hint">蛋液目标多半不是整数个蛋。这里给你两条路，并把各自的代价算成数 —— 按哪个，你自己定。</p>
+    <div class="grid2">
+      <div class="panel" id="closeA-panel">
+        <h4>收口① 扣液体 <span class="tag">总液体守恒</span></h4>
+        <div id="closeA-body"></div>
+        <div class="btnrow"><button class="btn primary sm" type="button" id="btn-apply-A">采用这条</button></div>
+      </div>
+      <div class="panel" id="closeB-panel">
+        <h4>收口② 按整蛋配平 <span class="tag">比例全对</span></h4>
+        <div id="closeB-body"></div>
+        <div class="btnrow"><button class="btn primary sm" type="button" id="btn-apply-B">采用这条</button></div>
+      </div>
+    </div>
+    <div class="tw" style="margin-top:11px">
+      <table class="stack" id="close-compare">
+        <thead><tr><th>配料</th><th class="num">① 扣完 g</th><th class="num">② 配平 g</th><th class="num">只按 k g</th><th>口径</th></tr></thead>
+        <tbody id="close-body"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ═══ 处方 ═══ -->
+  <section class="card" id="sec-advice">
+    <h2>下一步能做什么 <span class="step">处方</span></h2>
+    <p class="hint">每条都能按下去：按了就把对应的输入改掉并立刻重算。算出来做不到的，直接写"做不到"，不给你一条看着漂亮但落不了地的建议。</p>
+    <div id="advice-body"></div>
+  </section>
+
+  <!-- ═══ 反推 ═══ -->
+  <section class="card" id="sec-reverse">
+    <h2>反着算 <span class="step">反推</span></h2>
+    <h3 class="sec">想用整数个蛋，面粉该多少（每个蛋配固定克数的面粉）</h3>
+    <div class="tw">
+      <table class="stack" id="rev-body-table">
+        <thead><tr><th class="num">鸡蛋 个</th><th class="num">成比例的面粉 g</th><th class="num">相当于料量比 k</th><th>说明</th></tr></thead>
+        <tbody id="rev-egg"></tbody>
+      </table>
+    </div>
+    <h3 class="sec">圆模 ↔ 方模（等容积，不是等对角线）</h3>
+    <div class="tw">
+      <table class="stack" id="rev-shape-table">
+        <thead><tr><th>换算</th><th class="num">面积 cm²</th><th class="num">体积 cm³</th><th>等容积的另一形状</th></tr></thead>
+        <tbody id="rev-shape"></tbody>
+      </table>
+    </div>
+    <h3 class="sec">常说的「几寸」圆模（按 1 英寸 = 2.54 cm 换算）</h3>
+    <div class="tw">
+      <table class="stack" id="rev-inch-table">
+        <thead><tr><th class="num">寸</th><th class="num">直径 cm</th><th class="num">面积 cm²</th><th class="num">等面积方模边长 cm</th><th class="num">相对原模的 k</th></tr></thead>
+        <tbody id="rev-inch"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ═══ 对照表 ═══ -->
+  <section class="card" id="sec-tables">
+    <h2>换别的尺寸会怎样 <span class="step">对照表</span></h2>
+    <h3 class="sec">目标尺寸 ±20%（每行都能按页面上的数字回代）</h3>
+    <div class="tw">
+      <table class="stack" id="dia-table">
+        <thead><tr><th class="num">目标尺寸 cm</th><th class="num">系数</th><th class="num">k</th><th class="num">面粉 g</th><th class="num">首个配料 g</th><th class="num">建议蛋数</th><th class="num">总料 g</th></tr></thead>
+        <tbody id="dia-body"></tbody>
+      </table>
+    </div>
+    <h3 class="sec">目标模高度变化</h3>
+    <div class="tw">
+      <table class="stack" id="ht-table">
+        <thead><tr><th class="num">目标高度 cm</th><th class="num">k</th><th class="num">面粉 g</th><th class="num">总料 g</th></tr></thead>
+        <tbody id="ht-body"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ═══ 自检 ═══ -->
+  <section class="card" id="sec-selfcheck">
+    <h2>算式自检 <span class="badge" id="sc-count">—</span></h2>
+    <p class="hint">引擎自己验自己：每条都写明用了哪几个数、算出什么。写测试时用的是同一套断言。</p>
+    <div id="sc-body"></div>
+  </section>
+
+  <!-- ═══ 边界 ═══ -->
+  <section class="card" id="sec-model">
+    <h2>模型假设与做不到的事 <span class="step">先看这里</span></h2>
+    <ul class="notes" id="notes"></ul>
+    <h3 class="sec">本页不做的事</h3>
+    <ul class="notes">
+      <li><b>不给烘烤温度与时间</b>：温度和时间不随配方线性缩放，还依赖你的烤箱与模具材质 —— 它不在"可复算"的范围里，本页只提醒你"模具变了，温度和时间要另调"。</li>
+      <li><b>不换算杯 / 毫升</b>：那是原料密度问题，不在本页边界内；本页只用克。</li>
+      <li><b>不做心形、中空、异形模的具体容积</b>：只支持圆和矩形两种能写出公式的面积。异形模请自己按"能装多少水"折成一个等价直径再填。</li>
+      <li><b>不判断面糊该装几分满</b>：那是配方之外的经验，本页不给结论。</li>
+      <li><b>不内置任何真实配方、品牌、面粉吸水性</b>：所有百分比和蛋重都是你填的；默认值是一份<b>虚构示例</b>，不是任何人的配方。</li>
+      <li><b>不评价哪种模具、哪种面粉更好。</b></li>
+    </ul>
+  </section>
+
+</div>
+
+<div class="footbar">
+  <div class="in">
+    <span>料量比 k：<b id="fb-k">—</b></span>
+    <span>面粉：<b id="fb-flour">—</b></span>
+    <span>鸡蛋：<b id="fb-egg">—</b></span>
+    <span>自检：<b id="fb-sc">—</b></span>
+  </div>
+</div>
+
+<script>/*CORE*/</script>
+<script>/*UI*/</script>
+</body>
+</html>
